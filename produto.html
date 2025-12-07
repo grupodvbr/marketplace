@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<title>Produto • ZaapDV</title>
+
+<link rel="icon" href="icons/logo.png">
+
+<style>
+body{
+  margin:0;
+  background:#fff;
+  font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.img{
+  width:100%;
+  height:270px;
+  object-fit:cover;
+}
+
+.box{
+  padding:18px;
+}
+
+.nome{
+  font-size:20px;
+  font-weight:700;
+}
+
+.preco{
+  font-size:22px;
+  color:#007aff;
+  font-weight:700;
+  margin:10px 0;
+}
+
+.desc{
+  color:#555;
+  font-size:16px;
+  margin-top:14px;
+}
+
+.btn{
+  width:100%;
+  padding:14px;
+  background:#25d366;
+  color:white;
+  border:none;
+  border-radius:14px;
+  margin-top:20px;
+  font-size:18px;
+  font-weight:700;
+}
+</style>
+</head>
+
+<body>
+
+<div id="content"></div>
+
+<script type="module">
+import { produtoPorId } from "./src/services/produtos.js";
+import { lojaPorId } from "./src/services/lojas.js";
+
+const params = new URLSearchParams(location.search);
+const prodId = params.get("id");
+
+async function carregar(){
+  const p = await produtoPorId(prodId);
+  const loja = await lojaPorId(p.loja_id);
+
+  const html = `
+    <img src="${p.imagens?.[0] || 'icons/noimage.png'}" class="img">
+
+    <div class="box">
+      <div class="nome">${p.nome}</div>
+      <div class="preco">R$ ${Number(p.preco).toFixed(2)}</div>
+
+      <div class="desc">${p.descricao || ''}</div>
+
+      <button class="btn"
+        onclick="window.location.href='https://wa.me/${loja.whatsapp}?text=Olá! Tenho interesse no produto: ${p.nome}'">
+        Conversar no WhatsApp
+      </button>
+    </div>
+  `;
+
+  document.getElementById("content").innerHTML = html;
+}
+
+carregar();
+</script>
+
+</body>
+</html>
