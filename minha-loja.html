@@ -201,7 +201,7 @@ import { supa } from "./src/supabase.js";
    VERIFICAR LOGIN
 --------------------------------------------------------- */
 supa.auth.getSession().then(({ data })=>{
-  if(!data.session){
+  if(!data?.session){
     window.location.href = "login.html";
   } else {
     carregarLojas();
@@ -213,12 +213,19 @@ supa.auth.getSession().then(({ data })=>{
 --------------------------------------------------------- */
 async function carregarLojas(){
   const { data: session } = await supa.auth.getSession();
-  const userId = session.session.user.id;
+  const userId = session?.session?.user?.id;
+  if (!userId) return;
 
-  const { data: lojas } = await supa
+  const { data: lojas, error } = await supa
     .from("lojas")
     .select("*")
-    .eq("dono_id", userId);
+    .eq("dono_id", userId)
+    .order("criado_em", { ascending:false });
+
+  if (error) {
+    console.error("Erro ao buscar lojas:", error);
+    return;
+  }
 
   const area = document.getElementById("listaLojas");
   area.innerHTML = "";
@@ -241,22 +248,29 @@ async function carregarLojas(){
 }
 
 /* ---------------------------------------------------------
-   NOVA LOJA
+   NOVA LOJA — AJUSTADO
 --------------------------------------------------------- */
 async function novaLoja(){
   const nome = prompt("Nome da loja:");
-  if(!nome) return;
+  if(!nome || nome.trim() === "") return;
 
   const { data: session } = await supa.auth.getSession();
-  const userId = session.session.user.id;
+  const userId = session?.session?.user?.id;
+
+  if (!userId) {
+    alert("Erro: sessão inválida.");
+    return;
+  }
 
   const { data, error } = await supa
     .from("lojas")
     .insert({
-      nome,
+      nome: nome.trim(),
       dono_id: userId,
       descricao: "",
-      tema: { cor: "#007aff" }
+      tema: { cor: "#007aff" },
+      logo: null,
+      banner: null
     })
     .select()
     .single();
@@ -268,7 +282,6 @@ async function novaLoja(){
     abrirLoja(data.id);
   }
 }
-
 
 function abrirLoja(id){
   window.location.href = `loja.html?id=${id}`;
