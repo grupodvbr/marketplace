@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<title>Loja • ZaapDV</title>
+
+<link rel="icon" href="icons/logo.png">
+
+<style>
+body{
+  margin:0;
+  background:#fff;
+  font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.banner{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+}
+
+.loja-header{
+  padding:20px;
+  text-align:center;
+}
+
+.loja-logo{
+  width:100px;
+  height:100px;
+  border-radius:50%;
+  object-fit:cover;
+  border:3px solid #007aff33;
+  margin-top:-60px;
+  background:white;
+}
+
+.loja-nome{
+  font-size:22px;
+  font-weight:700;
+  margin-top:10px;
+}
+
+.desc{
+  color:#666;
+  margin-top:6px;
+}
+
+.produtos-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  padding:16px;
+}
+
+.prod-card{
+  background:white;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 3px 14px rgba(0,0,0,.08);
+}
+
+.prod-card img{
+  width:100%;
+  height:140px;
+  object-fit:cover;
+}
+
+.prod-info{
+  padding:10px;
+}
+
+.prod-name{
+  font-size:14px;
+  height:34px;
+  font-weight:600;
+}
+
+.prod-price{
+  color:#007aff;
+  font-size:16px;
+  font-weight:700;
+  margin-top:4px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="content"></div>
+
+<script type="module">
+import { lojaPorId } from "./src/services/lojas.js";
+import { produtosDaLoja } from "./src/services/produtos.js";
+
+const params = new URLSearchParams(location.search);
+const lojaId = params.get("id");
+
+async function carregar(){
+  const loja = await lojaPorId(lojaId);
+  const produtos = await produtosDaLoja(lojaId);
+
+  const html = `
+    <img src="${loja.banner || 'icons/noimage.png'}" class="banner">
+
+    <div class="loja-header">
+      <img src="${loja.logo || 'icons/loja.png'}" class="loja-logo">
+      <div class="loja-nome">${loja.nome}</div>
+      <div class="desc">${loja.descricao || ''}</div>
+    </div>
+
+    <div class="produtos-grid">
+      ${produtos.map(p => `
+        <div class="prod-card" onclick="window.location='produto.html?id=${p.id}'">
+          <img src="${p.imagens?.[0] || 'icons/noimage.png'}">
+          <div class="prod-info">
+            <div class="prod-name">${p.nome}</div>
+            <div class="prod-price">R$ ${Number(p.preco).toFixed(2)}</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  document.getElementById("content").innerHTML = html;
+}
+
+carregar();
+</script>
+
+</body>
+</html>
