@@ -146,29 +146,18 @@ body{
 
 <body>
 
-<!-- ====================================================== -->
-<!-- TOPO -->
-<!-- ====================================================== -->
 <header class="topbar">
   <span class="title">Minhas Lojas</span>
 </header>
 
-<!-- ====================================================== -->
-<!-- CONTEÚDO -->
-<!-- ====================================================== -->
 <div class="page">
 
-  <!-- BOTÃO CRIAR LOJA -->
   <button class="btn-primary" onclick="novaLoja()">Criar nova loja</button>
 
-  <!-- ÁREA DE LOJAS -->
   <div id="listaLojas"></div>
 
 </div>
 
-<!-- ====================================================== -->
-<!-- MENU INFERIOR -->
-<!-- ====================================================== -->
 <nav class="bottombar">
   <button class="nav-btn" onclick="window.location.href='index.html'">
     <img src="icons/home.png">
@@ -191,15 +180,10 @@ body{
   </button>
 </nav>
 
-<!-- ====================================================== -->
-<!-- SCRIPT -->
-<!-- ====================================================== -->
 <script type="module">
 import { supa } from "./src/supabase.js";
 
-/* ---------------------------------------------------------
-   VERIFICAR LOGIN
---------------------------------------------------------- */
+/* LOGIN */
 supa.auth.getSession().then(({ data })=>{
   if(!data?.session){
     window.location.href = "login.html";
@@ -208,24 +192,16 @@ supa.auth.getSession().then(({ data })=>{
   }
 });
 
-/* ---------------------------------------------------------
-   CARREGAR LOJAS DO USUÁRIO
---------------------------------------------------------- */
+/* CARREGAR LOJAS */
 async function carregarLojas(){
   const { data: session } = await supa.auth.getSession();
   const userId = session?.session?.user?.id;
-  if (!userId) return;
 
-  const { data: lojas, error } = await supa
+  const { data: lojas } = await supa
     .from("lojas")
     .select("*")
     .eq("dono_id", userId)
     .order("criado_em", { ascending:false });
-
-  if (error) {
-    console.error("Erro ao buscar lojas:", error);
-    return;
-  }
 
   const area = document.getElementById("listaLojas");
   area.innerHTML = "";
@@ -247,30 +223,21 @@ async function carregarLojas(){
   });
 }
 
-/* ---------------------------------------------------------
-   NOVA LOJA — AJUSTADO
---------------------------------------------------------- */
+/* CRIAR NOVA LOJA */
 async function novaLoja(){
   const nome = prompt("Nome da loja:");
-  if(!nome || nome.trim() === "") return;
+  if(!nome) return;
 
   const { data: session } = await supa.auth.getSession();
   const userId = session?.session?.user?.id;
 
-  if (!userId) {
-    alert("Erro: sessão inválida.");
-    return;
-  }
-
   const { data, error } = await supa
     .from("lojas")
     .insert({
-      nome: nome.trim(),
+      nome,
       dono_id: userId,
       descricao: "",
-      tema: { cor: "#007aff" },
-      logo: null,
-      banner: null
+      tema: { cor: "#007aff" }
     })
     .select()
     .single();
@@ -283,6 +250,11 @@ async function novaLoja(){
   }
 }
 
+/* Tornar funções globais */
+window.novaLoja = novaLoja;
+window.abrirLoja = abrirLoja;
+
+/* ABRIR LOJA */
 function abrirLoja(id){
   window.location.href = `loja.html?id=${id}`;
 }
