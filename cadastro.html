@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title>ZaapDV • Criar Conta</title>
+
+<link rel="icon" type="image/png" href="icons/logo.png">
+<link rel="apple-touch-icon" href="icons/logo.png">
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#ffffff">
+
+<style>
+body{
+  margin:0;
+  padding:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#f5f7fa;
+  font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.container{
+  width:92%;
+  max-width:400px;
+}
+
+.card{
+  background:white;
+  padding:28px 25px;
+  border-radius:18px;
+  box-shadow:0 8px 25px rgba(0,0,0,.10);
+  animation:fade .35s ease;
+}
+
+@keyframes fade{
+  from{opacity:0; transform:translateY(10px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+h2{
+  margin:0 0 25px 0;
+  text-align:center;
+  font-size:26px;
+  font-weight:700;
+}
+
+.input{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid #ccc;
+  margin-bottom:15px;
+  font-size:16px;
+}
+
+.btn{
+  width:100%;
+  padding:12px;
+  background:#007aff;
+  color:white;
+  border:none;
+  border-radius:14px;
+  font-size:17px;
+  margin-top:10px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.link{
+  text-align:center;
+  margin-top:12px;
+  font-size:15px;
+  color:#007aff;
+  cursor:pointer;
+}
+
+.foto-preview{
+  width:90px;
+  height:90px;
+  border-radius:50%;
+  object-fit:cover;
+  display:block;
+  margin:0 auto 14px auto;
+  border:3px solid #007aff;
+  display:none;
+}
+
+#erro{
+  text-align:center;
+  color:red;
+  font-size:14px;
+  display:none;
+  margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+
+    <h2>Criar Conta</h2>
+
+    <img id="fotoPreview" class="foto-preview">
+
+    <input type="file" id="fotoInput" accept="image/*" style="margin-bottom:15px;">
+
+    <input id="nome" type="text" class="input" placeholder="Nome completo">
+    <input id="telefone" type="text" class="input" placeholder="Telefone">
+    <input id="email" type="email" class="input" placeholder="E-mail">
+    <input id="senha" type="password" class="input" placeholder="Senha">
+    <input id="senha2" type="password" class="input" placeholder="Confirmar senha">
+
+    <button class="btn" onclick="cadastrar()">Criar Conta</button>
+
+    <div id="erro"></div>
+
+    <div class="link" onclick="window.location.href='login.html'">
+      Já tenho conta
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import { supa } from "./src/supabase.js";
+
+/* =================================================================
+   PRÉVIA DA FOTO (opcional)
+================================================================= */
+const fotoInput = document.getElementById("fotoInput");
+const fotoPreview = document.getElementById("fotoPreview");
+
+fotoInput.onchange = (e)=>{
+  if(e.target.files.length > 0){
+    const file = e.target.files[0];
+    fotoPreview.src = URL.createObjectURL(file);
+    fotoPreview.style.display = "block";
+  }
+};
+
+/* =================================================================
+   CADASTRAR
+================================================================= */
+window.cadastrar = async function(){
+  const erro = document.getElementById("erro");
+  erro.style.display = "none";
+
+  const nome = document.getElementById("nome").value.trim();
+  const telefone = document.getElementById("telefone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value;
+  const senha2 = document.getElementById("senha2").value;
+
+  if(!nome || !telefone || !email || !senha){
+    erro.style.display = "block";
+    erro.textContent = "Preencha todos os campos obrigatórios.";
+    return;
+  }
+
+  if(senha !== senha2){
+    erro.style.display = "block";
+    erro.textContent = "As senhas não conferem.";
+    return;
+  }
+
+  // 1. Criar usuário no Supabase Auth
+  const { data, error: errorAuth } = await supa.auth.signUp({
+    email,
+    password: senha
+  });
+
+  if(errorAuth){
+    erro.style.display = "block";
+    erro.textContent = "Erro ao cadastrar: " + errorAuth.message;
+    return;
+  }
+
+  const userId = data.user.id;
+  let fotoURL = null;
+
+  // 2. Upload da foto se existir
+  if(fotoInput.files.length > 0){
+    const file = fotoInput.files[0];
+
+    const filePath = `perfil/${userId}_${Date.now()}.jpg`;
+
+    const { error: uploadError } = await supa.storage
+      .from("users")
+      .upload(filePath, file);
+
+    if(!uploadError){
+      const { data: publicURL } = supa.storage
+        .from("users")
+        .getPublicUrl(filePath);
+
+      fotoURL = publicURL.publicUrl;
+    }
+  }
+
+  // 3. Registrar na tabela users
+  await supa.from("users").insert({
+    id: userId,
+    nome,
+    telefone,
+    foto: fotoURL
+  });
+
+  // 4. Redirecionar
+  window.location.href = "index.html";
+};
+</script>
+
+</body>
+</html>
