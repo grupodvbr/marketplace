@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title>ZaapDV • Minhas Lojas</title>
+
+<link rel="icon" type="image/png" href="icons/logo.png">
+<link rel="apple-touch-icon" href="icons/logo.png">
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#ffffff">
+
+<style>
+/* ============================================================
+   BASE
+============================================================ */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+body{
+  background:#ffffff;
+  height:100vh;
+  overflow:hidden;
+}
+
+/* TOP */
+.topbar{
+  width:100%;
+  height:calc(58px + env(safe-area-inset-top));
+  padding:0 20px;
+  padding-top:calc(10px + env(safe-area-inset-top));
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  border-bottom:1px solid #ececec;
+  background:white;
+}
+
+.title{
+  font-size:24px;
+  font-weight:700;
+  margin-bottom:7px;
+}
+
+/* PÁGINA */
+.page{
+  height:calc(100vh - (75px + env(safe-area-inset-bottom)));
+  overflow-y:auto;
+  padding:20px;
+}
+
+/* BOTÃO PRINCIPAL */
+.btn-primary{
+  width:100%;
+  padding:12px;
+  background:#007aff;
+  color:white;
+  border:none;
+  border-radius:14px;
+  font-size:17px;
+  font-weight:600;
+  cursor:pointer;
+  margin-bottom:16px;
+}
+
+/* LOJA CARD */
+.loja-card{
+  background:white;
+  border-radius:14px;
+  padding:16px;
+  border:1px solid #e5e5e5;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+  margin-bottom:14px;
+  display:flex;
+  gap:14px;
+  cursor:pointer;
+}
+
+.loja-logo{
+  width:70px;
+  height:70px;
+  border-radius:10px;
+  object-fit:cover;
+  border:2px solid #007aff33;
+}
+
+.loja-info{
+  flex:1;
+}
+
+.loja-nome{
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:4px;
+}
+
+.loja-desc{
+  font-size:14px;
+  color:#666;
+}
+
+/* MENU INFERIOR */
+.bottombar{
+  height:calc(75px + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:white;
+  border-top:1px solid #ececec;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+
+.nav-btn{
+  background:none;
+  border:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-size:11px;
+  color:#7d7d80;
+  cursor:pointer;
+}
+
+.nav-btn.active{
+  color:black;
+}
+
+.nav-btn img{
+  width:27px;
+  height:27px;
+  margin-bottom:3px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ====================================================== -->
+<!-- TOPO -->
+<!-- ====================================================== -->
+<header class="topbar">
+  <span class="title">Minhas Lojas</span>
+</header>
+
+<!-- ====================================================== -->
+<!-- CONTEÚDO -->
+<!-- ====================================================== -->
+<div class="page">
+
+  <!-- BOTÃO CRIAR LOJA -->
+  <button class="btn-primary" onclick="novaLoja()">Criar nova loja</button>
+
+  <!-- ÁREA DE LOJAS -->
+  <div id="listaLojas"></div>
+
+</div>
+
+<!-- ====================================================== -->
+<!-- MENU INFERIOR -->
+<!-- ====================================================== -->
+<nav class="bottombar">
+  <button class="nav-btn" onclick="window.location.href='index.html'">
+    <img src="icons/home.png">
+    Home
+  </button>
+
+  <button class="nav-btn active" onclick="window.location.href='minha-loja.html'">
+    <img src="icons/loja.png">
+    Minhas Lojas
+  </button>
+
+  <button class="nav-btn" onclick="window.location.href='favoritos.html'">
+    <img src="icons/favorito.png">
+    Favoritos
+  </button>
+
+  <button class="nav-btn" onclick="window.location.href='perfil.html'">
+    <img src="icons/user.png">
+    Perfil
+  </button>
+</nav>
+
+<!-- ====================================================== -->
+<!-- SCRIPT -->
+<!-- ====================================================== -->
+<script type="module">
+import { supa } from "./src/supabase.js";
+
+/* ---------------------------------------------------------
+   VERIFICAR LOGIN
+--------------------------------------------------------- */
+supa.auth.getSession().then(({ data })=>{
+  if(!data.session){
+    window.location.href = "login.html";
+  } else {
+    carregarLojas();
+  }
+});
+
+/* ---------------------------------------------------------
+   CARREGAR LOJAS DO USUÁRIO
+--------------------------------------------------------- */
+async function carregarLojas(){
+  const { data: session } = await supa.auth.getSession();
+  const userId = session.session.user.id;
+
+  const { data: lojas } = await supa
+    .from("lojas")
+    .select("*")
+    .eq("dono_id", userId);
+
+  const area = document.getElementById("listaLojas");
+  area.innerHTML = "";
+
+  lojas.forEach(loja=>{
+    const div = document.createElement("div");
+    div.className = "loja-card";
+    div.onclick = ()=> abrirLoja(loja.id);
+
+    div.innerHTML = `
+      <img src="${loja.logo || 'icons/loja.png'}" class="loja-logo">
+      <div class="loja-info">
+          <div class="loja-nome">${loja.nome}</div>
+          <div class="loja-desc">${loja.descricao || 'Sem descrição'}</div>
+      </div>
+    `;
+
+    area.appendChild(div);
+  });
+}
+
+/* ---------------------------------------------------------
+   NOVA LOJA
+--------------------------------------------------------- */
+async function novaLoja(){
+  const nome = prompt("Nome da loja:");
+  if(!nome) return;
+
+  const { data: session } = await supa.auth.getSession();
+  const userId = session.session.user.id;
+
+  const { data, error } = await supa.from("lojas").insert({
+    nome,
+    dono_id: userId,
+    descricao: "",
+    tema: { cor: "#007aff" }
+  }).select().single();
+
+  if(error){
+    alert("Erro ao criar loja");
+  } else {
+    abrirLoja(data.id);
+  }
+}
+
+function abrirLoja(id){
+  window.location.href = `loja.html?id=${id}`;
+}
+
+</script>
+
+</body>
+</html>
