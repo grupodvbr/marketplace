@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title>ZaapDV • Login</title>
+
+<link rel="icon" type="image/png" href="icons/logo.png">
+<link rel="apple-touch-icon" href="icons/logo.png">
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#ffffff">
+
+<style>
+body{
+  margin:0;
+  padding:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#f5f7fa;
+  font-family:-apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.container{
+  width:92%;
+  max-width:380px;
+}
+
+.card{
+  background:white;
+  padding:30px 25px;
+  border-radius:18px;
+  box-shadow:0 8px 25px rgba(0,0,0,.10);
+  animation:fade .35s ease;
+}
+
+@keyframes fade{
+  from{opacity:0; transform:translateY(10px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+h2{
+  margin:0 0 25px 0;
+  text-align:center;
+  font-size:26px;
+  font-weight:700;
+}
+
+.input{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid #ccc;
+  margin-bottom:15px;
+  font-size:16px;
+}
+
+.btn{
+  width:100%;
+  padding:12px;
+  background:#007aff;
+  color:white;
+  border:none;
+  border-radius:14px;
+  font-size:17px;
+  margin-top:5px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.link{
+  text-align:center;
+  margin-top:12px;
+  font-size:15px;
+  color:#007aff;
+  cursor:pointer;
+}
+
+#erro{
+  text-align:center;
+  color:red;
+  font-size:14px;
+  display:none;
+  margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h2>Entrar</h2>
+
+    <input id="email" type="email" class="input" placeholder="E-mail">
+    <input id="senha" type="password" class="input" placeholder="Senha">
+
+    <button class="btn" onclick="entrar()">Entrar</button>
+
+    <div id="erro"></div>
+
+    <div class="link" onclick="window.location.href='cadastro.html'">
+      Criar uma conta
+    </div>
+
+    <div class="link" onclick="resetarSenha()">
+      Esqueci minha senha
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { supa } from "./src/supabase.js";
+
+/* =======================================================
+   LOGIN AUTOMÁTICO SE JÁ ESTIVER AUTENTICADO
+======================================================= */
+supa.auth.getSession().then(({ data })=>{
+  if(data.session){
+    window.location.href = "index.html";
+  }
+});
+
+/* =======================================================
+   LOGIN
+======================================================= */
+window.entrar = async function(){
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value.trim();
+  const erro = document.getElementById("erro");
+
+  if(!email || !senha){
+    erro.style.display="block";
+    erro.textContent = "Preencha todos os campos.";
+    return;
+  }
+
+  const { error } = await supa.auth.signInWithPassword({
+    email, password: senha
+  });
+
+  if(error){
+    erro.style.display="block";
+    erro.textContent = "E-mail ou senha incorretos.";
+    return;
+  }
+
+  window.location.href = "index.html";
+};
+
+/* =======================================================
+   RESETAR SENHA
+======================================================= */
+window.resetarSenha = async function(){
+  const email = prompt("Digite seu e-mail:");
+  if(!email) return;
+
+  const { error } = await supa.auth.resetPasswordForEmail(email);
+
+  if(error){
+    alert("Erro ao enviar e-mail.");
+  } else {
+    alert("E-mail enviado! Verifique sua caixa de entrada.");
+  }
+};
+</script>
+
+</body>
+</html>
